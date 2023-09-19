@@ -13,6 +13,8 @@
 #define LF 10
 #define FF 12
 #define CR 13
+#define BLANC 15
+#define NOIR 0
 
 #include<cpu.h>
 #include<string.h>
@@ -53,6 +55,11 @@ fait remonter d’une ligne l’affichage à l’écran (il pourra
 être judicieux d’utiliser memmove définie dans string.h pour cela)
 */
 void defilement(void);
+
+/*
+met à jour la position du curseur.
+*/
+void update_position_curseur();
 
 void console_putbytes(const char *s, int len);
 

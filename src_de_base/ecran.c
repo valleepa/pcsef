@@ -3,8 +3,8 @@
 
 uint16_t position_curseur_lig = 0;
 uint16_t position_curseur_col = 0;
-uint8_t couleur = 0;
-uint8_t couleur_fond = 4;
+uint8_t couleur = BLANC;
+uint8_t couleur_fond = NOIR;
 uint8_t clignotement = 0;
 
 /*
@@ -13,7 +13,7 @@ case mémoire correspondant aux coordonnées fournies
 */
 uint16_t *ptr_mem(uint32_t lig, uint32_t col)
 {
-    return (uint16_t *) MEM_START + 2 * (lig * NB_COL + col);
+    return (uint16_t *) (MEM_START + 2 * (lig * NB_COL + col)); // attention aux parenthèses du cast
 }
 
 /*
@@ -22,7 +22,7 @@ aux coordonnées spécifiée, et met à jour la position du curseur
 */
 void ecrit_car(uint32_t lig, uint32_t col, char c)
 {
-    uint16_t word = c;
+    uint16_t word = 0 | c;
     word |= couleur << 8;
     word |= couleur_fond << 12;
     word |= clignotement << 15;
@@ -32,6 +32,15 @@ void ecrit_car(uint32_t lig, uint32_t col, char c)
 
     position_curseur_lig = lig;
     position_curseur_col = col;
+    update_position_curseur();
+
+}
+
+/*
+met à jour la position du curseur.
+*/
+void update_position_curseur()
+{
     if(position_curseur_col == NB_COL - 1)
     {
         if(position_curseur_lig == NB_LIG - 1)
@@ -46,7 +55,6 @@ void ecrit_car(uint32_t lig, uint32_t col, char c)
     {
         position_curseur_col++;
     }
-
 }
 
 /*
@@ -60,6 +68,8 @@ void efface_ecran(void)
     {
         for(int j = 0; j < NB_COL; j++)
         {
+            couleur = BLANC;
+            couleur_fond = NOIR;
             ecrit_car(position_curseur_lig, position_curseur_col, ' ');
         }
     }
@@ -104,7 +114,10 @@ void traite_car(char c)
             }   
             break;
         case HT:
-            while(position_curseur_col % 8 != 0 || position_curseur_col != NB_COL - 1)
+            if(position_curseur_col == NB_COL - 1)
+                break;
+            position_curseur_col++;
+            while(position_curseur_col % 8 != 0 && position_curseur_col != NB_COL - 1)
             {
                 position_curseur_col++;
             }
@@ -142,12 +155,15 @@ fait remonter d’une ligne l’affichage à l’écran (il pourra
 void defilement(void)
 {
     memmove(ptr_mem(0,0), ptr_mem(1,0), 2 * ((NB_LIG-1) * NB_LIG + (NB_COL-1)));
+
+    // Mise à jour de la position du curseur
+    position_curseur_lig --;
 }
 
 void console_putbytes(const char *s, int len)
 {
     for(int i = 0; i < len; i++)
     {
-        ecrit_car(position_curseur_lig, position_curseur_col, s[i]);
+        traite_car(s[i]);
     }
 }

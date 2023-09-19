@@ -16,8 +16,9 @@ uint32_t fact(uint32_t n)
         res = fact(n - 1) * n;
     }
 
-    //printf("%c\n", '\n');
-    //printf("%c\n", '\t');
+    printf("fact : %d", res);
+    printf("\n");
+    printf("\t");
 
     return res;
 }
@@ -26,6 +27,9 @@ void kernel_start(void)
 {
     efface_ecran();
     uint32_t x = fact(5);
+    defilement();
+    printf("\r");
+    fact(6);
     // quand on saura gerer l'ecran, on pourra afficher x
     (void)x;
     // on ne doit jamais sortir de kernel_start

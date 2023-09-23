@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <ecran.h>
+#include <horloge.h>
 
 // on peut s'entrainer a utiliser GDB avec ce code de base
 // par exemple afficher les valeurs de x, n et res avec la commande display
@@ -25,13 +26,14 @@ uint32_t fact(uint32_t n)
 
 void kernel_start(void)
 {
+    //initialisations
     efface_ecran();
-    uint32_t x = fact(5);
-    defilement();
-    printf("\r");
-    fact(6);
-    // quand on saura gerer l'ecran, on pourra afficher x
-    (void)x;
+    init_traitant_IT(32, traitant_IT_32);
+    setup_clock_frequency(CLOCKFREQ);
+    masque_IRQ(0, 0); // démasque la clock
+
+    // démasquage des interruptions externes
+    sti();
     // on ne doit jamais sortir de kernel_start
     while (1) {
         // cette fonction arrete le processeur

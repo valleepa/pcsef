@@ -3,6 +3,7 @@
 #include <inttypes.h>
 #include <ecran.h>
 #include <horloge.h>
+#include <processus.h>
 
 // on peut s'entrainer a utiliser GDB avec ce code de base
 // par exemple afficher les valeurs de x, n et res avec la commande display
@@ -32,8 +33,12 @@ void kernel_start(void)
     setup_clock_frequency(CLOCKFREQ);
     masque_IRQ(0, 0); // démasque la clock
 
+    make_process_table();
+
+    idle();
+
     // démasquage des interruptions externes
-    sti();
+    // sti();
     // on ne doit jamais sortir de kernel_start
     while (1) {
         // cette fonction arrete le processeur

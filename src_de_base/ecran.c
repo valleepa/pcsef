@@ -126,6 +126,7 @@ void traite_car(char c)
             if(position_curseur_lig != NB_LIG - 1)
             {
                 position_curseur_lig++;
+                position_curseur_col = 0;
             }
             break;
         case FF:

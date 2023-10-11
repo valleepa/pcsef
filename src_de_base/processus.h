@@ -20,7 +20,7 @@ typedef struct Processus
     uint32_t pile[TAILLE_PILE];
 } Processus;
 
-extern Processus procs[NB_PROCESSUS];
+extern Processus ** procs;
 
 void idle(void);
 void proc1(void);

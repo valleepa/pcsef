@@ -34,7 +34,12 @@ void kernel_start(void)
     masque_IRQ(0, 0); // démasque la clock
 
     make_process_table();
-
+    for(uint8_t i = 0; i < NB_PROCESSUS; i++)
+    {
+        cree_processus(&fct_proc_i, "proc");
+    }
+    
+    set_proc_actif(0);
     idle();
 
     // démasquage des interruptions externes

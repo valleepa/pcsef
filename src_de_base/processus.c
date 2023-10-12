@@ -6,6 +6,7 @@
 
 Processus * proc_actif;
 Processus ** procs;
+uint8_t index_table_utilise;
 
 void idle(void)
 {
@@ -16,7 +17,7 @@ void idle(void)
     }
 }
 
-void proc1(void)
+void fct_proc_i(void)
 {
     for(;;)
     {
@@ -27,22 +28,28 @@ void proc1(void)
 
 void ordonnance()
 {
-    Processus * idle = procs[0];
-    Processus * proc1 = procs[1];
-    if(idle->etat == Elu)
+    uint8_t pid_proc_a_elire = (proc_actif->pid + 1) % NB_PROCESSUS;
+    Processus * nouveau_elu = get_processus(pid_proc_a_elire);
+
+    nouveau_elu->etat = Elu;
+    proc_actif->etat = Activable;
+    Processus * ancien_elu = proc_actif;
+    proc_actif = nouveau_elu;
+    ctx_sw((uint32_t *) &(ancien_elu->registres), (uint32_t *) &(nouveau_elu->registres));
+}
+
+Processus * get_processus(uint8_t pid)
+{
+    Processus * res;
+    for(uint8_t i = 0; i < NB_PROCESSUS; i++)
     {
-        idle->etat = Activable;
-        proc1->etat = Elu;
-        proc_actif = proc1;
-        ctx_sw((uint32_t *) &(idle->registres), (uint32_t *) &(proc1->registres));
+        if(procs[i] != NULL && procs[i]->pid == pid)
+        {
+            res = procs[i];
+        }
     }
-    else
-    {
-        idle->etat = Elu;
-        proc1->etat = Activable;
-        proc_actif = idle;
-        ctx_sw((uint32_t *) &(proc1->registres), (uint32_t *) &(idle->registres));
-    }
+
+    return res;
 }
 
 char * mon_nom()
@@ -57,17 +64,38 @@ uint8_t mon_pid()
 
 void make_process_table()
 {
+    index_table_utilise = 0;
     procs = (Processus **) malloc(NB_PROCESSUS * sizeof(Processus *));
-    procs[0] = (Processus *) malloc(sizeof(Processus));
-    procs[1] = (Processus *) malloc(sizeof(Processus));
-    strcpy(procs[0]->nom, "idle");
-    strcpy(procs[1]->nom, "proc1");
-    procs[0]->pid = 0;
-    procs[1]->pid = 1;
-    procs[0]->etat = Elu;
-    procs[1]->etat = Activable;
-    proc_actif = procs[0];
+    for(uint8_t i = 0; i < NB_PROCESSUS; i++)
+    {
+        procs[i] = (Processus *) malloc(sizeof(Processus));
+    }
+}
 
-    procs[1]->registres[ESP] = (uint32_t) &(procs[1]->pile[TAILLE_PILE - 1]);
-    procs[1]->pile[TAILLE_PILE - 1] = (uint32_t) &proc1;
+void set_proc_actif(uint8_t pid)
+{
+    proc_actif = get_processus(pid);
+}
+
+uint8_t cree_processus(void (*code)(void), char * nom)
+{
+    if(index_table_utilise < NB_PROCESSUS)
+    {
+        Processus * proc = procs[index_table_utilise];
+        strcpy(proc->nom, nom);
+        proc->pid = index_table_utilise;
+        if(proc->pid == 0) // idle
+        {
+            proc->etat = Elu;
+        }
+        else
+        {
+            proc->etat = Activable;
+            proc->registres[ESP] = (uint32_t) &(proc->pile[TAILLE_PILE - 1]);
+            proc->pile[TAILLE_PILE - 1] = (uint32_t) code;    
+        }
+
+        index_table_utilise++;
+    }
+    return -1;
 }

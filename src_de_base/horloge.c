@@ -4,6 +4,7 @@
 #include "ecran.h"
 #include "cpu.h"
 #include "segment.h"
+#include "processus.h"
 
 uint8_t nb_tics = 0;
 uint32_t nb_secondes = 0;
@@ -23,6 +24,8 @@ void tic_PIT(void)
         ecrit_temps(str, LONGUEUR_AFFICHAGE);
         nb_tics = 0;
     }
+
+    ordonnance();
 }
 
 /*

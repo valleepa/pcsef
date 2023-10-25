@@ -61,6 +61,8 @@ met à jour la position du curseur.
 */
 void update_position_curseur();
 
+void overwrite_blank_last_line(void);
+
 void console_putbytes(const char *s, int len);
 
 #endif

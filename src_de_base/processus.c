@@ -5,15 +5,18 @@
 #include <tinyalloc.h>
 
 Processus * proc_actif;
-Processus ** procs;
-uint8_t index_table_utilise;
+Processus * tete_liste;
+Processus * queue_liste;
+uint8_t nb_processus_crees;
 
 void idle(void)
 {
     for(;;)
     {
         printf("[%s] pid = %i\n", mon_nom(), mon_pid());
-        ordonnance();
+        sti();
+        hlt();
+        cli();
     }
 }
 
@@ -22,34 +25,19 @@ void fct_proc_i(void)
     for(;;)
     {
         printf("[%s] pid = %i\n", mon_nom(), mon_pid());
-        ordonnance();
+        sti();
+        hlt();
+        cli();
     }
 }
 
 void ordonnance()
 {
-    uint8_t pid_proc_a_elire = (proc_actif->pid + 1) % NB_PROCESSUS;
-    Processus * nouveau_elu = get_processus(pid_proc_a_elire);
-
-    nouveau_elu->etat = Elu;
-    proc_actif->etat = Activable;
     Processus * ancien_elu = proc_actif;
+    Processus * nouveau_elu = extraction_tete_activables();
+    insertion_queue_activable(proc_actif);
     proc_actif = nouveau_elu;
     ctx_sw((uint32_t *) &(ancien_elu->registres), (uint32_t *) &(nouveau_elu->registres));
-}
-
-Processus * get_processus(uint8_t pid)
-{
-    Processus * res;
-    for(uint8_t i = 0; i < NB_PROCESSUS; i++)
-    {
-        if(procs[i] != NULL && procs[i]->pid == pid)
-        {
-            res = procs[i];
-        }
-    }
-
-    return res;
 }
 
 char * mon_nom()
@@ -62,40 +50,54 @@ uint8_t mon_pid()
     return proc_actif->pid;
 }
 
-void make_process_table()
+void init_process_list()
 {
-    index_table_utilise = 0;
-    procs = (Processus **) malloc(NB_PROCESSUS * sizeof(Processus *));
-    for(uint8_t i = 0; i < NB_PROCESSUS; i++)
-    {
-        procs[i] = (Processus *) malloc(sizeof(Processus));
-    }
+    Processus * idle = (Processus *) malloc(sizeof(Processus));
+    strcpy(idle->nom, "idle");
+    idle->etat = Elu;
+    idle->pid = 0;
+    proc_actif = idle;
+    tete_liste = idle;
+    queue_liste = idle;
+    nb_processus_crees = 1;
 }
 
-void set_proc_actif(uint8_t pid)
+
+void insertion_queue_activable(Processus * proc)
 {
-    proc_actif = get_processus(pid);
+    queue_liste->suiv = proc;
+    queue_liste = proc;
+    queue_liste->etat = Activable;
+}
+
+
+Processus * extraction_tete_activables()
+{
+    Processus * proc = tete_liste;
+    tete_liste = tete_liste->suiv;
+    proc->suiv = NULL;
+    proc->etat = Elu;
+    return proc;
+}
+
+void tete_a_queue()
+{
+    extraction_tete_activables();
+    insertion_queue_activable(proc_actif);
 }
 
 uint8_t cree_processus(void (*code)(void), char * nom)
 {
-    if(index_table_utilise < NB_PROCESSUS)
-    {
-        Processus * proc = procs[index_table_utilise];
-        strcpy(proc->nom, nom);
-        proc->pid = index_table_utilise;
-        if(proc->pid == 0) // idle
-        {
-            proc->etat = Elu;
-        }
-        else
-        {
-            proc->etat = Activable;
-            proc->registres[ESP] = (uint32_t) &(proc->pile[TAILLE_PILE - 1]);
-            proc->pile[TAILLE_PILE - 1] = (uint32_t) code;    
-        }
+    Processus * proc = (Processus *) malloc(sizeof(Processus));
+    queue_liste->suiv = proc;
+    queue_liste = proc;
 
-        index_table_utilise++;
-    }
-    return -1;
+    strcpy(proc->nom, nom);
+    proc->etat = Activable;
+    proc->registres[ESP] = (uint32_t) &(proc->pile[TAILLE_PILE - 1]);
+    proc->pile[TAILLE_PILE - 1] = (uint32_t) code;
+    proc->pid = nb_processus_crees;
+    nb_processus_crees++;
+
+    return proc->pid;
 }

@@ -123,10 +123,15 @@ void traite_car(char c)
             }
             break;
         case LF:
-            if(position_curseur_lig != NB_LIG - 1)
+            position_curseur_col = 0;
+            if(position_curseur_lig == NB_LIG - 1)
+            {
+                defilement();
+                overwrite_blank_last_line();
+            }
+            else
             {
                 position_curseur_lig++;
-                position_curseur_col = 0;
             }
             break;
         case FF:
@@ -155,11 +160,26 @@ fait remonter d’une ligne l’affichage à l’écran (il pourra
 */
 void defilement(void)
 {
-    memmove(ptr_mem(0,0), ptr_mem(1,0), 2 * ((NB_LIG-1) * NB_LIG + (NB_COL-1)));
-
-    // Mise à jour de la position du curseur
-    position_curseur_lig --;
+    memmove(ptr_mem(0,0), ptr_mem(1,0), 2 * ((NB_LIG-1) * (NB_COL-1)));
 }
+
+void overwrite_blank_last_line(void)
+{
+    //uint16_t ancienne_position_lig = position_curseur_lig;
+    //uint16_t ancienne_position_col = position_curseur_col;
+
+    position_curseur_lig = NB_LIG - 1;
+    position_curseur_col = 0;
+
+    for(size_t i = 0; i < NB_COL; i++)
+    {
+        traite_car(' ');
+    }
+
+    position_curseur_lig = NB_LIG - 1;
+    position_curseur_col = 0;
+}
+
 
 void console_putbytes(const char *s, int len)
 {

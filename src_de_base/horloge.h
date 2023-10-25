@@ -5,6 +5,8 @@
 #define CLOCKFREQ 50
 #define LONGUEUR_AFFICHAGE 10
 
+uint32_t get_temps();
+
 void traitant_IT_32(void);
 
 /*

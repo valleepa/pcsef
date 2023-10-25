@@ -34,11 +34,12 @@ void kernel_start(void)
     masque_IRQ(0, 0); // démasque la clock
 
     init_process_list();
-    for(uint8_t i = 0; i < NB_PROCESSUS; i++)
-    {
-        cree_processus(&fct_proc_i, "proc i");
-    }
-    tete_a_queue();
+
+    cree_processus(&proc1, "proc 1");
+    cree_processus(&proc2, "proc 2");
+    cree_processus(&proc3, "proc 3");
+
+    tete_a_queue(); // utilisé pour replacer idle en queue de liste
     
     idle();
 

@@ -7,7 +7,7 @@
 #define ESP 1
 #include <inttypes.h>
 
-typedef enum Etat {Elu = 1, Activable = 0} Etat;
+typedef enum Etat {Elu = 1, Activable = 0, Endormi = 2} Etat;
 
 extern void ctx_sw(uint32_t *, uint32_t *);
 
@@ -16,17 +16,24 @@ typedef struct Processus
     uint8_t pid;
     char nom[TAILLE_NOM];
     Etat etat;
+    uint32_t heure_reveil;
     uint32_t registres[NB_REGISTRES];
     uint32_t pile[TAILLE_PILE];
     struct Processus * suiv;
 } Processus;
 
 void idle(void);
-void fct_proc_i(void);
+void proc1(void);
+void proc2(void);
+void proc3(void);
+void insertion_endormis(Processus * proc);
+Processus * extraction_tete_endormis();
+void reveiller_processus_endormis();
 void init_process_list();
 void ordonnance();
 char * mon_nom();
 uint8_t mon_pid();
+void dors(uint32_t nbr_secs);
 /*
 prend en
 paramètre le code de la fonction à exécuter (ainsi que le nom du processus) et renvoie le pid du

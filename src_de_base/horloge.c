@@ -9,6 +9,11 @@
 uint8_t nb_tics = 0;
 uint32_t nb_secondes = 0;
 char str[LONGUEUR_AFFICHAGE];
+
+uint32_t get_temps()
+{
+    return nb_secondes;
+}
 /*
 Traitant de l'interruption de l'horloge (appelé à chaque interruption PIT)
 Commence par une partie assembleur dans traitant.S pour sauvegarder les registres
@@ -21,7 +26,7 @@ void tic_PIT(void)
     {
         nb_secondes += 1;
         sprintf(str, "%02uh%02um%02us", nb_secondes / 3600, (nb_secondes / 60) % 3600, nb_secondes % 60);
-        ecrit_temps(str, LONGUEUR_AFFICHAGE);
+        //ecrit_temps(str, LONGUEUR_AFFICHAGE);
         nb_tics = 0;
     }
 

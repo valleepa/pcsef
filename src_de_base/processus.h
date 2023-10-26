@@ -7,7 +7,7 @@
 #define ESP 1
 #include <inttypes.h>
 
-typedef enum Etat {Elu = 1, Activable = 0, Endormi = 2} Etat;
+typedef enum Etat {Elu = 1, Activable = 0, Endormi = 2, Zombie = 3} Etat;
 
 extern void ctx_sw(uint32_t *, uint32_t *);
 
@@ -29,10 +29,11 @@ void proc3(void);
 void insertion_endormis(Processus * proc);
 Processus * extraction_tete_endormis();
 void reveiller_processus_endormis();
-void init_process_list();
 void ordonnance();
 char * mon_nom();
 uint8_t mon_pid();
+void fin_processus(void);
+void affiche_etats(void);
 void dors(uint32_t nbr_secs);
 /*
 prend en
@@ -45,11 +46,6 @@ uint8_t cree_processus(void (*code)(void), char * nom);
 Extrait la tête de la LC des activables et la renvoie
 */
 Processus * extraction_tete_activables();
-
-/*
-Extrait la tête pour la mettre en queue. Pour mettre idle en fin de liste et ainsi ne pas le répeter au début
-*/
-void tete_a_queue();
 
 /*
 Ajoute le processus proc en fin de LC des activables

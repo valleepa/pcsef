@@ -33,13 +33,10 @@ void kernel_start(void)
     setup_clock_frequency(CLOCKFREQ);
     masque_IRQ(0, 0); // démasque la clock
 
-    init_process_list();
-
+    cree_processus(&idle, "idle");
     cree_processus(&proc1, "proc 1");
     cree_processus(&proc2, "proc 2");
     cree_processus(&proc3, "proc 3");
-
-    tete_a_queue(); // utilisé pour replacer idle en queue de liste
     
     idle();
 

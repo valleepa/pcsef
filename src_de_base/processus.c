@@ -10,9 +10,11 @@ Processus * tete_liste;
 Processus * queue_liste;
 Processus * tete_liste_endormis;
 Processus * queue_liste_endormis;
+Processus * tete_liste_zombies;
+Processus * queue_liste_zombies;
+uint8_t nb_processus_zombies = 0;
 uint8_t nb_processus_endormis = 0;
 uint8_t nb_processus_activables = 0;
-uint8_t nb_processus_crees;
 
 void idle(void)
 {
@@ -26,11 +28,12 @@ void idle(void)
 
 void proc1(void)
 {
-    for(;;)
+    for(int32_t i = 0; i < 2; i++)
     {
         printf("[temps = %u] processus %s pid = %i\n", get_temps(), mon_nom(), mon_pid());
         dors(2);
     }
+    fin_processus();
 }
 
 void proc2(void)
@@ -58,17 +61,12 @@ void ordonnance()
 
     ancien_elu = proc_actif;
     
-    if(nb_processus_endormis > 0)
-    {
-        reveiller_processus_endormis();       
-    }
-    if(nb_processus_activables > 0)
-    {
-        nouvel_elu = extraction_tete_activables();
-        insertion_queue_activable(proc_actif);
-        proc_actif = nouvel_elu;
-        ctx_sw((uint32_t *) &(ancien_elu->registres), (uint32_t *) &(nouvel_elu->registres));
-    }
+    reveiller_processus_endormis(); 
+
+    insertion_queue_activable(proc_actif);
+    nouvel_elu = extraction_tete_activables();
+    proc_actif = nouvel_elu;
+    ctx_sw((uint32_t *) &(ancien_elu->registres), (uint32_t *) &(nouvel_elu->registres));
 }
 
 void reveiller_processus_endormis()
@@ -102,24 +100,36 @@ uint8_t mon_pid()
     return proc_actif->pid;
 }
 
-void init_process_list()
-{
-    Processus * idle = (Processus *) malloc(sizeof(Processus));
-    strcpy(idle->nom, "idle");
-    idle->etat = Elu;
-    idle->pid = 0;
-    proc_actif = idle;
-    tete_liste = idle;
-    queue_liste = idle;
-    nb_processus_crees = 1;
-}
-
 
 void insertion_queue_activable(Processus * proc)
 {
-    queue_liste->suiv = proc;
-    queue_liste = proc;
-    queue_liste->etat = Activable;
+    if(queue_liste != NULL)
+    {
+        queue_liste->suiv = proc;
+        queue_liste = proc;
+        queue_liste->etat = Activable;
+    }
+    else
+    {
+        tete_liste = proc;
+        queue_liste = proc;
+        queue_liste->etat = Activable;
+    }
+}
+
+void insertion_zombies(Processus * proc)
+{
+    if(nb_processus_zombies == 0)
+    {
+        tete_liste_zombies = proc;
+        queue_liste_zombies = proc;
+    }
+    else
+    {
+        queue_liste_zombies->suiv = proc;
+        queue_liste_zombies = proc;
+    }
+    nb_processus_zombies++;
 }
 
 void insertion_endormis(Processus * proc)
@@ -180,26 +190,28 @@ Processus * extraction_tete_endormis()
     return proc;
 }
 
-void tete_a_queue()
-{
-    extraction_tete_activables();
-    insertion_queue_activable(proc_actif);
-}
-
 uint8_t cree_processus(void (*code)(void), char * nom)
 {
     Processus * proc = (Processus *) malloc(sizeof(Processus));
-    queue_liste->suiv = proc;
+    if(nb_processus_activables == 0)
+    {
+        proc->etat = Elu;
+        proc->pid = 0;
+        proc_actif = proc;
+        tete_liste = proc;
+    }
+    else
+    {
+        queue_liste->suiv = proc;
+        proc->etat = Activable;
+        proc->registres[ESP] = (uint32_t) &(proc->pile[TAILLE_PILE - 1]);
+        proc->pile[TAILLE_PILE - 1] = (uint32_t) code;
+    }
+
+    proc->pid = nb_processus_activables;
     queue_liste = proc;
-
     strcpy(proc->nom, nom);
-    proc->etat = Activable;
-    proc->registres[ESP] = (uint32_t) &(proc->pile[TAILLE_PILE - 1]);
-    proc->pile[TAILLE_PILE - 1] = (uint32_t) code;
-    proc->pid = nb_processus_crees;
-    nb_processus_crees++;
     nb_processus_activables++;
-
     return proc->pid;
 }
 
@@ -211,4 +223,13 @@ void dors(uint32_t nbr_secs)
     insertion_endormis(proc_actif);
     proc_actif = extraction_tete_activables();
     ctx_sw((uint32_t *) &(proc_endormi->registres), (uint32_t *) &(proc_actif->registres));
+}
+
+void fin_processus(void)
+{
+    Processus * proc_zombie = proc_actif;
+    proc_zombie->etat = Zombie;
+    insertion_zombies(proc_zombie);
+    proc_actif = extraction_tete_activables();
+    ctx_sw((uint32_t *) &(proc_zombie->registres), (uint32_t *) &(proc_actif->registres));
 }
